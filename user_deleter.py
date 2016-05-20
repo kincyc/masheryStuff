@@ -1,5 +1,3 @@
-import urllib.request
-import urllib.parse
 import time
 import hashlib
 import math
@@ -14,10 +12,7 @@ import argparse
 import logging
 import http.client
 import argparse
-<<<<<<< HEAD
 import requests
-=======
->>>>>>> ebd88e0df02718444e91f14802e207b0bc6fdb7a
 
 __author__="kincy"
 __date__ ="$Jan 11, 2011 10:18:04 AM$"
@@ -44,7 +39,6 @@ def getList(objectType, pageNum):
 	data = {}
 	data["method"] = "object.query"
 	data["id"] = 1
-<<<<<<< HEAD
 	data["params"] = ['SELECT * FROM ' + objectType + ' PAGE ' + str(pageNum)]
 	result = callAPI("getList", data)
 	if not result:
@@ -54,19 +48,13 @@ def getList(objectType, pageNum):
 		writeMasheryError("getList", key, "Objects not found in area")
 		return False 
 	
-	return result['result']['items'][0]
-=======
-	data["params"] = ['SELECT * FROM ' + objectType + ' WHERE area_status = \'disabled\' PAGE ' + str(pageNum)]
-	return data
->>>>>>> ebd88e0df02718444e91f14802e207b0bc6fdb7a
-	
+	return result['result']['items'][0]	
 
 def deleteMember(memberID):
 	data = {}
 	data["method"] = "member.delete"
 	data["id"] = 1
 	data["params"] = [memberID]
-<<<<<<< HEAD
 	result = callAPI("deleteMember", data)
 	if not result:
 		return False
@@ -96,9 +84,7 @@ def fetchKey(key):
 
 def callAPI(operation, data):
 
-	# convert the dict to a JSON payload
 	data = json.dumps(data, ensure_ascii=True).encode('utf-8') # , sort_keys = True, indent=4)
-	# generate the URL to call the Mashery API
 	url = endpoint + path + "?apikey=" + developers['apikey'] + "&sig=" + buildAuthParams()
 
 	try:
@@ -144,41 +130,15 @@ def callAPI(operation, data):
 	return response.json()
 	
 def writeMasheryError(operation, apikey, reason):
-		errorOutput = {}
-		errorOutput['message'] = reason
-		errorOutput['oldapikey'] = oldApiKey.rstrip()
-		errorOutput["time"] = str(datetime.datetime.now().time())
-		errorOutput['operation'] = operation
-		logging.warn(errorOutput)
-		with open(keyErrorsFile, "a") as errorFile:
-			errorFile.write(str(errorOutput) + "\n")
-=======
-	# create the json payload for the API call
-		# print (data)
+	errorOutput = {}
+	errorOutput['message'] = reason
+	errorOutput['oldapikey'] = oldApiKey.rstrip()
+	errorOutput["time"] = str(datetime.datetime.now().time())
+	errorOutput['operation'] = operation
+	logging.warn(errorOutput)
+	with open(keyErrorsFile, "a") as errorFile:
+		errorFile.write(str(errorOutput) + "\n")
 	return data
-
-def callAPI(data):
-	# convert the dict to a JSON payload
-	data = json.dumps(data, ensure_ascii=True) # , sort_keys = True, indent=4)
-	data = data.encode('utf-8')
-	url = endpoint + path + "?apikey=" + developers['apikey'] + "&sig=" + buildAuthParams()
-	print (url)
-	req = urllib.request.Request(url, data)
-	# print (url)
-	try:
-		response = urllib.request.urlopen(req)
-		return response.read()
-		
-	except urllib.error.URLError as e:
-		pprint.pprint(data)
-		print (e.code)
-		print (e.reason)
-		print (e.args)
-		return e.reason.encode("utf-8")
-		# sys.exit()
-
->>>>>>> ebd88e0df02718444e91f14802e207b0bc6fdb7a
-	
 
 if __name__ == "__main__":
 
