@@ -15,8 +15,8 @@ import cgi
 import jwt
 import manageTokens
 
-PORT_NUMBER = 8000
-HOST_NAME = "127.0.0.1"
+PORT_NUMBER = 80
+HOST_NAME = "172.30.93.170"
 fake = Faker()
 
 _item = """helmet,greeting card,sharpie,clothes,pool stick,street lights,
@@ -89,8 +89,8 @@ class MyHandler(BaseHTTPRequestHandler):
 	def do_GET(s):
 		"""Respond to a GET request."""
 		# need to split out the URL parameters
-		pathElements = s.path.split("?")
-		
+		urlElements = s.path.split("?")
+		pathElements = urlElements.split("/")
 		print(pathElements)
 		
 		if pathElements[0] == "/api":
