@@ -44,7 +44,7 @@ def mockOrder(numItems):
 		item["price"] = str(random.randint(10,250))
 		items.append(item)
 	order['items'] = items	
-	order["bunchOText"] = fake.paragraphs(150)
+	order["bunchOText"] = fake.paragraphs(1)
 	
 	return order
 
@@ -55,7 +55,7 @@ def mockDeal():
 	deal['fullDesc'] = fake.paragraph(5, True)
 	deal["price"] = str(random.randint(10,250))
 	deal['dateDealEnd'] = str(fake.date_time_this_year())
-	deal["bunchOText"] = fake.paragraphs(50)
+	deal["bunchOText"] = fake.paragraphs(1)
 	return deal
 
 def mockCustomer():
@@ -65,7 +65,7 @@ def mockCustomer():
 	mockCustomer['phone'] = fake.phone_number()
 	mockCustomer['occupation'] = fake.job()
 	del mockCustomer["current_location"]	# this has some wierd decimal format that I didn't feel like figuring out
-	mockCustomer["bunchOText"] = fake.paragraphs(50)
+	mockCustomer["bunchOText"] = fake.paragraphs(1)
 	return mockCustomer
 
 def loginPage():
@@ -86,6 +86,7 @@ class MyHandler(BaseHTTPRequestHandler):
 		s.send_response(200)
 		s.send_header("Content-type", "application/json")
 		s.end_headers()
+	
 	def do_GET(s):
 		"""Respond to a GET request."""
 		# need to split out the URL parameters
@@ -115,6 +116,7 @@ class MyHandler(BaseHTTPRequestHandler):
 		
 		for hdr in s.headers:
 			logging.debug(hdr)
+			logging.debug(s.headers)
 		
 		s.send_response(200)
 		s.send_header("Content-type", contentType)
@@ -187,6 +189,7 @@ class MyHandler(BaseHTTPRequestHandler):
 
 		pageBottom = '</body></html>' 
 		self.wfile.write(pageBottom.encode('utf-8'))
+
 
 if __name__ == '__main__':
 
