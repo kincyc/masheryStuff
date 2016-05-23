@@ -114,9 +114,7 @@ class MyHandler(BaseHTTPRequestHandler):
 			output = loginPage()
 			contentType = "text/html"
 		
-		for hdr in s.headers:
-			logging.debug(hdr)
-			logging.debug(s.headers)
+		logging.debug(s.headers)
 		
 		s.send_response(200)
 		s.send_header("Content-type", contentType)
@@ -158,7 +156,7 @@ class MyHandler(BaseHTTPRequestHandler):
 		
 		myJwt = jwt.encode({'userContext': userContext, 'firstName': firstName, 'lastName': lastName}, 'secret', algorithm='HS256')
 		
-		x = manageTokens.createToken("pkdydc7bcayyp6cd5xmsqfnd", "dygum537t28pgsjqbtsnsnze", "1234567890", myJwt.decode("utf-8"))
+		x = manageTokens.createToken("g29353wbtdrxtxd4g3373ekv", "dygum537t28pgsjqbtsnsnze", "1234567890", myJwt.decode("utf-8"))
 		logging.debug(x)
 
 		# Tell the browser everything is okay and that there is
