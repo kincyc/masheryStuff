@@ -90,22 +90,22 @@ class MyHandler(BaseHTTPRequestHandler):
 		"""Respond to a GET request."""
 		# need to split out the URL parameters
 		urlElements = s.path.split("?")
-		pathElements = urlElements.split("/")
+		pathElements = urlElements[0].split("/")
 		print(pathElements)
 		
-		if pathElements[0] == "/api":
-			if pathElements[1] == "/order":
+		if pathElements[1] == "api":
+			if pathElements[2] == "order":
 				myResponse = mockOrder(random.randint(1,25))
-			elif pathElements[1] == "/deal":
+			elif pathElements[2] == "deal":
 				myResponse = mockDeal()
-			elif pathElements[1] == "/customer":
+			elif pathElements[2] == "customer":
 				myResponse = mockCustomer()
 			else:
 				myResponse = mockDeal()
 			output = json.dumps(myResponse, indent=4, sort_keys=True)
 			contentType = "application/json"
 
-		elif pathElements[0]== "/login":
+		elif pathElements[1]== "login":
 			output = loginPage()
 			contentType = "text/html"
 			
