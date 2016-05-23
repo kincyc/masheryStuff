@@ -71,9 +71,7 @@ def fetchToken(spkey, token):
 
 if __name__ == "__main__":
 
-	
-	x = createToken("pkdydc7bcayyp6cd5xmsqfnd", "dygum537t28pgsjqbtsnsnze", "1234567890")
-	x = fetchToken("pkdydc7bcayyp6cd5xmsqfnd", "s82ehn6nahduffnbq6evu4qr")
+	x = createToken("g29353wbtdrxtxd4g3373ekv", "xk5nmy7gvtsjkp437mqn9dyr", "1234567890", "askhkjahkjahdkjash")
 	print(x)
 	
 # 	with open('tokens.out', 'r') as tokens:
