@@ -24,7 +24,8 @@ developers = json.load(open('developers.json'))['kincy']
 
 # endpoints
 v3endpoint = "https://api.mashery.com/v3/rest"
-uuid = '5d932bf0-a4c6-4d24-b1ab-ab1b2bf6cd9c'	# walmart labs
+tokenPath = "https://api.mashery.com/v3/token"
+uuid = 'ff368e6f-4f41-4d4b-8f9b-10ea76b301f2'	# trainingarea4
 
 def getOAuthHeaders():
 	# create the necessary authorization header	
@@ -58,10 +59,13 @@ if __name__ == "__main__":
 	# initialize a python dictionary
 	myData = {}
 	# load with crossdomain XML. Include newlines for readability in the GUI
-	myData['crossdomainPolicy'] = '<?xml version="1.0"?>\n<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">\n<cross-domain-policy>\n\n<allow-access-from domain="assetsw.sellpoint.net" />\n<allow-access-from domain="a.sellpoint.net" />\n<allow-access-from domain="assets.sellpoint.net" />\n<allow-access-from domain="*.walmart.com"/>\n<allow-access-from domain="t.sellpoints.com"/>\n</cross-domain-policy>'
-	
+# 	myData['crossdomainPolicy'] = '<?xml version="1.0"?>\n<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">\n<cross-domain-policy>\n\n<allow-access-from domain="assetsw.sellpoint.net" />\n<allow-access-from domain="a.sellpoint.net" />\n<allow-access-from domain="assets.sellpoint.net" />\n<allow-access-from domain="*.walmart.com"/>\n<allow-access-from domain="t.sellpoints.com"/>\n</cross-domain-policy>'
+
+	myData['crossdomainPolicy'] = ''
+
 	for service in getServices():
+		response = updateService(service["id"], myData)
+		pprint.pprint(response)
 		details = getService(service["id"])
 		pprint.pprint(details)
-		# response = updateService(service["id"], myData)
-		# pprint.pprint(response)
+		

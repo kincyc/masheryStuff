@@ -1,22 +1,33 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from os import curdir, sep
+from faker import Faker
 import socketserver
-try:
-	import simplejson as json
-except ImportError:
-	import json
 import random
 import string
 import sys
 import time
 import pprint
-from faker import Faker
 import logging
 import cgi
 import jwt
 import manageTokens
+import argparse
+try:
+	import simplejson as json
+except ImportError:
+	import json
 
-PORT_NUMBER = 80
-HOST_NAME = "172.30.93.170"
+
+developers = json.load(open('developers.json'))['kincy']
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--hostname", type=str, default="127.0.0.1", help="hostname to be served")
+parser.add_argument("-p", "--port", type=int, default="80", help="listening port")
+args = parser.parse_args()
+
+PORT_NUMBER = args.port
+HOST_NAME = args.hostname
+
 fake = Faker()
 
 _item = """helmet,greeting card,sharpie,clothes,pool stick,street lights,
@@ -68,17 +79,49 @@ def mockCustomer():
 	mockCustomer["bunchOText"] = fake.paragraphs(1)
 	return mockCustomer
 
-def loginPage():
+def serveLocalPage(path):
+		
+	if path.endswith(".jpg"):
+		mimetype='image/jpg'
+		sendReply = True
+	elif path.endswith(".gif"):
+		mimetype='image/gif'
+		sendReply = True
+	elif path.endswith(".js"):
+		mimetype='application/javascript'
+		sendReply = True
+	elif path.endswith(".css"):
+		mimetype='text/css'
+		sendReply = True
+	else:
+		mimetype='text/html'
+		sendReply = True
+
+	try:
+		logging.debug(curdir + sep + path)
+		f = open(curdir + sep + path) 
+		output = f.read()
+		f.close()
+		return (output, mimetype)
+
+	except IOError:
+		
+		return ("error", "text/html")
+
+def serveAPI(api):
+		
+	if api == "order":
+		myResponse = mockOrder(random.randint(1,25))
+	elif api == "deal":
+		myResponse = mockDeal()
+	elif api == "customer":
+		myResponse = mockCustomer()
+	else:
+		myResponse = mockDeal()
 	
-	return  """<!DOCTYPE html><html><body
-	><form action="/" method="post">
-    <div><label for="name">Username:</label><input type="text" id="username" name="user_name" /></div>
-    <div><label for="mail">Password:</label><input type="text" id="password" name="user_pass" /></div>
-    <div><label for="name">Firstname:</label><input type="text" id="username" name="firstName" /></div>
-    <div><label for="mail">Lastname:</label><input type="text" id="password" name="lastName" /></div>
-    <div><label for="msg">Secret Data:</label><textarea id="context" name="userContext"></textarea></div>
-    <div class="button"><button type="submit">Send your message</button></div>
-	</form></body></html>"""
+	output = json.dumps(myResponse, indent=4, sort_keys=True)
+	contentType = "application/json"
+	return (output, contentType)
 
 class MyHandler(BaseHTTPRequestHandler):
 	
@@ -87,61 +130,52 @@ class MyHandler(BaseHTTPRequestHandler):
 		s.send_header("Content-type", "application/json")
 		s.end_headers()
 	
+
 	def do_GET(s):
 		"""Respond to a GET request."""
 		# need to split out the URL parameters
+		logging.debug(s.headers)
+		
+		if 'X-Mashery-Oauth-User-Context' in s.headers:
+			logging.debug(s.headers.get('X-Mashery-Oauth-User-Context'))
+			logging.debug(jwt.decode(s.headers.get('X-Mashery-Oauth-User-Context'), 'secret', algorithm='HS256'))
+		
 		urlElements = s.path.split("?")
 		pathElements = urlElements[0].split("/")
 		print(pathElements)
 		
 		if pathElements[1] == "api":
-			if pathElements[2] == "order":
-				myResponse = mockOrder(random.randint(1,25))
-			elif pathElements[2] == "deal":
-				myResponse = mockDeal()
-			elif pathElements[2] == "customer":
-				myResponse = mockCustomer()
-			else:
-				myResponse = mockDeal()
-			output = json.dumps(myResponse, indent=4, sort_keys=True)
-			contentType = "application/json"
-
-		elif pathElements[1]== "login":
-			output = loginPage()
-			contentType = "text/html"
-			
+			output, contentType = serveAPI(pathElements[2])
 		else:
-			output = loginPage()
-			contentType = "text/html"
-		
-		logging.debug(s.headers)
-		
+			output, contentType = serveLocalPage(s.path) 
+
+		if output == "error":
+			s.send_error(404,'File Not Found: %s' % s.path)
+
 		s.send_response(200)
 		s.send_header("Content-type", contentType)
 		s.end_headers()
 		s.wfile.write(bytes(output, "utf-8"))
 
-	def do_POST(self):
+	def do_POST(s):
+		logging.debug(s.headers)
 		# Handle POST requests.
-		logging.debug('POST %s' % (self.path))
+		logging.debug('POST %s' % (s.path))
 
 		# CITATION: http://stackoverflow.com/questions/4233218/python-basehttprequesthandler-post-variables
-		ctype, pdict = cgi.parse_header(self.headers['content-type'])
+		ctype, pdict = cgi.parse_header(s.headers['content-type'])
 		if ctype == 'multipart/form-data':
-			postvars = cgi.parse_multipart(self.rfile, pdict)
+			postvars = cgi.parse_multipart(s.rfile, pdict)
 		elif ctype == 'application/x-www-form-urlencoded':
-			length = int(self.headers['content-length'])
-			postvars = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
+			length = int(s.headers['content-length'])
+			postvars = cgi.parse_qs(s.rfile.read(length), keep_blank_values=1)
 		else:
 			postvars = {}
 
 		# Print out logging information about the path and args.
 		logging.debug('TYPE %s' % (ctype))
-		logging.debug('PATH %s' % (self.path))
+		logging.debug('PATH %s' % (s.path))
 		logging.debug('ARGS %d' % (len(postvars)))
-		
-		for hdr in self.headers:
-			logging.debug(hdr)
 		
 		if len(postvars):
 			i = 0
@@ -156,37 +190,40 @@ class MyHandler(BaseHTTPRequestHandler):
 		
 		myJwt = jwt.encode({'userContext': userContext, 'firstName': firstName, 'lastName': lastName}, 'secret', algorithm='HS256')
 		
-		x = manageTokens.createToken("g29353wbtdrxtxd4g3373ekv", "dygum537t28pgsjqbtsnsnze", "1234567890", myJwt.decode("utf-8"))
-		logging.debug(x)
+		x = manageTokens.createToken(developers['apikey'], developers['secret'], "g29353wbtdrxtxd4g3373ekv", "xk5nmy7gvtsjkp437mqn9dyr", "1234567890", myJwt.decode("utf-8"))
+		logging.debug(x)		
+		# this is very brittle, does not handle an error case
+		authToken = x['result']['access_token']
 
-		# Tell the browser everything is okay and that there is
-		# HTML to display.
-		self.send_response(200)	 # OK
-		self.send_header('Content-type', 'text/html')
-		self.end_headers()
+		# Tell the browser everything is okay and that there is HTML to display.
+		s.send_response(200)	 # OK
+		s.send_header('Content-type', 'text/html')
+		s.end_headers()
 
 		# Display the POST variables.
 		pageHead = '<html><head><title>Server POST Response</title></head>'
-		self.wfile.write(pageHead.encode('utf-8'))
+		s.wfile.write(pageHead.encode('utf-8'))
 		pageBody = '<body><p>POST variables (%s).</p>' % (str(len(postvars)))
-		self.wfile.write(pageBody.encode('utf-8'))
+		s.wfile.write(pageBody.encode('utf-8'))
 
 		if len(postvars):
 			# Write out the POST variables in 3 columns.
 			tblTop ='<table><tbody>'
-			self.wfile.write(tblTop.encode('utf-8'))
+			s.wfile.write(tblTop.encode('utf-8'))
 			i = 0
 			for key in sorted(postvars):
 				i += 1
 				val = postvars[key]
-				row = '<tr><td align="right">{0}</td><td align="right">{1}</td><td align="left">{2}</td></tr>'.format( i, key, val)
-				self.wfile.write(row.encode('utf-8'))
+				row = '<tr><td align="right">{0}</td><td align="left">{1}</td><td align="left">{2}</td></tr>'.format(i, key, val)
+				s.wfile.write(row.encode('utf-8'))
 
+			row = '<tr><td align="right">{0}</td><td align="left">AuthToken</td><td align="left">{1}</td></tr>'.format(i, authToken)
+			s.wfile.write(row.encode('utf-8'))
 			tblTop ='</tbody></table>'
-			self.wfile.write(tblTop.encode('utf-8'))
+			s.wfile.write(tblTop.encode('utf-8'))
 
 		pageBottom = '</body></html>' 
-		self.wfile.write(pageBottom.encode('utf-8'))
+		s.wfile.write(pageBottom.encode('utf-8'))
 
 
 if __name__ == '__main__':
@@ -202,5 +239,4 @@ if __name__ == '__main__':
 		pass
 	httpd.server_close()
 	print (time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER))
-	
-	
+ 
