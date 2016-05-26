@@ -186,7 +186,7 @@ class MyHandler(BaseHTTPRequestHandler):
 				i += 1
 
 		logging.debug(postvars[b'secretData'][0].decode("utf-8"))
-		userContext = postvars[b'userContext'][0].decode("utf-8")
+		secretData = postvars[b'secretData'][0].decode("utf-8")
 		firstName = postvars[b'firstName'][0].decode("utf-8")
 		lastName = postvars[b'lastName'][0].decode("utf-8")
 		
