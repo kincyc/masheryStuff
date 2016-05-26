@@ -10,6 +10,8 @@ import pprint
 import logging
 import cgi
 import jwt
+
+sys.path.append('/Users/kincy/Projects/masheryStuff')
 import manageTokens
 import argparse
 try:
@@ -183,12 +185,12 @@ class MyHandler(BaseHTTPRequestHandler):
 				logging.debug('ARG[%d] %s=%s' % (i, key, postvars[key]))
 				i += 1
 
-		logging.debug(postvars[b'userContext'][0].decode("utf-8"))
+		logging.debug(postvars[b'secretData'][0].decode("utf-8"))
 		userContext = postvars[b'userContext'][0].decode("utf-8")
 		firstName = postvars[b'firstName'][0].decode("utf-8")
 		lastName = postvars[b'lastName'][0].decode("utf-8")
 		
-		myJwt = jwt.encode({'userContext': userContext, 'firstName': firstName, 'lastName': lastName}, 'secret', algorithm='HS256')
+		myJwt = jwt.encode({'secretData': secretData, 'firstName': firstName, 'lastName': lastName}, 'secret', algorithm='HS256')
 		
 		x = manageTokens.createToken(developers['apikey'], developers['secret'], "g29353wbtdrxtxd4g3373ekv", "xk5nmy7gvtsjkp437mqn9dyr", "1234567890", myJwt.decode("utf-8"))
 		logging.debug(x)		
