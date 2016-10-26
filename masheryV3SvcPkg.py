@@ -26,10 +26,10 @@ developers = json.load(open('developers.json'))['kincy']
 # endpoints
 tokenPath = "https://api.mashery.com/v3/token"
 v3endpoint = "https://api.mashery.com/v3/rest"
-uuid = 'ff368e6f-4f41-4d4b-8f9b-10ea76b301f2' 	# training area four
+# uuid = 'ff368e6f-4f41-4d4b-8f9b-10ea76b301f2' 	# training area four
+uuid = 'cfea444a-e396-442f-b38b-a2dafc000195'	# klmprod
 
 def getOAuthHeaders():
-
 	# create the necessary authorization header	
 	userAndPass = b64encode(bytes(developers['apikey'] + ":" + developers['secret'], 'utf-8')).decode("utf-8")
 	headers = { 'Authorization' : 'Basic %s' % userAndPass, "Content-Type": "application/x-www-form-urlencoded"}
@@ -41,8 +41,6 @@ def getOAuthHeaders():
 	# return the token
 	return { 'Authorization' : 'Bearer %s' % response.json()["access_token"], "Content-Type": "application/json" }
 
-# 	this function creates a service.
-# 
 def createService(service_name):
 	url = v3endpoint + "/services"
 	data = {"name" : service_name, "description" : "blah blah blah "}
@@ -60,6 +58,16 @@ def createEndpoint(serviceId, endpointName):
 
 def listServices():
 	url = v3endpoint + "/services"
+	response = requests.get(url, headers=OAuthheaders)
+	return response.json()
+
+def listEndpoints(serviceId):
+	url = v3endpoint + "/services/" + serviceId + "/endpoints"
+	response = requests.get(url, headers=OAuthheaders)
+	return response.json()
+
+def listMethods(serviceId, endpointId):
+	url = v3endpoint + "/services/" + serviceId + "/endpoints/" + endpointId + "/methods"
 	response = requests.get(url, headers=OAuthheaders)
 	return response.json()
 
@@ -134,17 +142,10 @@ if __name__ == "__main__":
 
 	# print (getFillerText())
 	OAuthheaders = getOAuthHeaders()
-	services = listServices()
-	for myService in services:
-		deleteme = input('should I remove %s from %s? ' % (myService['name'], uuid))
-		if deleteme == 'y':
-			print ("DELETE: %s" % myService["id"])
-			resp = deleteService(myService['id'])
-	
-# 	OPEN CSV FILE and convert it into a list of lists	
-# 	with open('it_portfolio.csv') as csvfile:
-# 		service_listing = csv.DictReader(csvfile)
-# # 		packagePlan = [[row['Segment'],row['Portfolio'], row['Service'].splitlines()[0]]  for row in servic  Segment Owner: e_listing]
-# 		for row in service_listing:
-# 			print(row['Segment'])
-		
+	serviceId = "dd6yx8s3apv7zdeeg7n4zcvj"
+	endpoints = listEndpoints(serviceId)
+	for myEndpoint in endpoints:
+		print(myEndpoint)
+		methods = listMethods(serviceId, myEndpoint["id"])
+		for m in methods:
+			print("\t" + str(m['name']))

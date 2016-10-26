@@ -44,13 +44,14 @@ def createToken(apikey, secret, spkey, client_id, client_secret, user_context):
 	payload["jsonrpc"] = "2.0"
 	payload["method"] = "oauth2.createAccessToken"
 	payload["params"] = {}
-	payload["params"]["token_data"] = {"grant_type": "client_credentials"}
+	payload["params"]["token_data"] = {"grant_type": "password"}
 	payload["params"]["user_context"]= user_context
 	payload["params"]["service_key"] = spkey
 	payload["params"]["client"] = {"client_id": client_id, "client_secret": client_secret}
 	payload["params"]["uri"] = {"redirect_uri": "https:\/\/client.example\/cb"}
 	payload["id"] = 1
 	url = endpoint + path + "?apikey=" + apikey + "&sig=" + buildAuthParams(apikey, secret)
+	pprint.pprint(url)
 	pprint.pprint(payload)
 	response = requests.post(url, data=json.dumps(payload))
 	return response.json()
@@ -69,5 +70,5 @@ def fetchToken(apikey, secret, spkey, token):
 
 if __name__ == "__main__":
 
-	x = createToken("g29353wbtdrxtxd4g3373ekv", "xk5nmy7gvtsjkp437mqn9dyr", "1234567890", "askhkjahkjahdkjash")
+	x = createToken("6bmaqy6dkpxnmujm6pp9a4wa", "AndJfk6r9A", "kpnfkx2k7n8xeghttyd7fugy", "75qt9xnvp38s7jx77kzhas4h", "8GsFPkZrnepvgZt936MTsfCa", "deleteme")
 	print(x)

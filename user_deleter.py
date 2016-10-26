@@ -1,28 +1,32 @@
+#!/usr/local/bin/python
+
 import time
 import hashlib
 import math
 import json
-import csv 		# necessary for parsing excel / csv file
-import sys 
 import pprint
 import string
-import random
 from base64 import b64encode
 import argparse
 import logging
-import http.client
-import argparse
 import requests
 
 __author__="kincy"
 __date__ ="$Jan 11, 2011 10:18:04 AM$"
  
 parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--delete', help="enter username of member to be removed from area", type=str)
+parser.add_argument('-u', '--users', help="enter username of members to be removed from area, separate by a space", nargs='*')
+parser.add_argument('-a', '--area', help="enter area id that username from which will be remove", type=int, required=True)
 args = parser.parse_args()
 
-developers = json.load(open('developers.json'))['kincy']
-areaID = 295
+# developers = json.load(open('developers.json'))['kincy']
+
+developers = {}
+developers['apikey'] = "qwe6b3khns3aww9e225scnw3"
+developers['secret'] = "PAYJ2GXvNM"
+
+
+areaID = args.area
 
 endpoint = "https://api.mashery.com"
 path = "/v2/json-rpc/" + str(areaID)
@@ -31,58 +35,39 @@ def buildAuthParams():
     """This function takes our API key and shared secret and uses it to create the signature that mashery wants """
     authHash = hashlib.md5();
     #time.time() gets the current time since the epoch (1970) with decimals seconds
-    temp = str.encode(developers['apikey'] + developers['secret'] + repr(int(time.time())))
+    temp = str.encode(str(developers['apikey']) + str(developers['secret']) + repr(int(time.time())))
     authHash.update(temp)
     return authHash.hexdigest()
- 		
+
 def getList(objectType, pageNum):	
 	data = {}
 	data["method"] = "object.query"
 	data["id"] = 1
 	data["params"] = ['SELECT * FROM ' + objectType + ' PAGE ' + str(pageNum)]
-	result = callAPI("getList", data)
+	result = callAPI(data)
 	if not result:
 		return False
-	
-	if len(result['result']['items']) == 0:
-		writeMasheryError("getList", key, "Objects not found in area")
-		return False 
-	
-	return result['result']['items'][0]	
+
+	if result['error'] == None:
+		return result['result']['items']
+	else:
+		print(result)
+		print("error retrieving list of users. Possibly a bad Mashery API key")
+		return False
 
 def deleteMember(memberID):
 	data = {}
 	data["method"] = "member.delete"
 	data["id"] = 1
 	data["params"] = [memberID]
-	result = callAPI("deleteMember", data)
-	if not result:
-		return False
+	result = callAPI(data)
+	if (result['error'] == None):
+		logging.warn("User " + memberID + " successfully removed from area " + str(areaID))
+		return True
 	
-	if len(result['result']['items']) == 0:
-		writeMasheryError("deleteMember", key, "Member not found in area")
-		return False 
+	return False
 
-	return result['result']['items'][0]
-
-def fetchKey(key):
-	data = {}
-	data["method"] = "object.query"
-	data["id"] = 1
-	data["params"] = ["SELECT * FROM keys WHERE apikey = '" + key +"'"]	
-	result = callAPI("fetchKey", data)
-	if not result:
-		return False
-	
-	if len(result['result']['items']) == 0:
-		writeMasheryError("fetchKey", key, "Key not found in Mashery database")
-		return False 
-	
-	logging.debug("Successfully fetched key: " + key)
-	logging.debug(result['result']['items'][0])
-	return result['result']['items'][0]
-
-def callAPI(operation, data):
+def callAPI(data):
 
 	data = json.dumps(data, ensure_ascii=True).encode('utf-8') # , sort_keys = True, indent=4)
 	url = endpoint + path + "?apikey=" + developers['apikey'] + "&sig=" + buildAuthParams()
@@ -91,17 +76,8 @@ def callAPI(operation, data):
 		response = requests.post(url, data, timeout=30)
 	
 	except requests.exceptions.RequestException as e:
-		# we have to decode the json object for pretty printing
-		# Otherwise, just outputs a byte object that isn't pretty printable
-		errorOutput = {}
-		errorOutput['operation'] = operation
-		errorOutput["message"] = str(e)
-		errorOutput["oldapikey"] = oldApiKey.rstrip()
-		errorOutput["time"] = str(datetime.datetime.now().time())
-		logging.warn(errorOutput)
-		with open(keyErrorsFile, "a") as errorFile:
-			errorFile.write(str(errorOutput) + "\n")
-		time.sleep(5)
+		logging.warn(str(e))
+		time.sleep(1)
 		return False
 
 	logging.debug("RESPONSE HEADERS")
@@ -109,63 +85,38 @@ def callAPI(operation, data):
 	
 	if response.headers['Content-Length'] == 0:
 		logging.warn("Zero-byte Content Returned")
-		writeMasheryError("fetchKey", key, "Key not found in Mashery database")
-		time.sleep(2)
+		time.sleep(1)
 		return False
 
 	try:
 		return response.json()
 	except (ValueError, TypeError):
-		errorOutput = {}
-		errorOutput['operation'] = operation
-		errorOutput["message"] = "No JSON Response" + str(response.headers)
-		errorOutput["oldapikey"] = oldApiKey.rstrip()
-		errorOutput["time"] = str(datetime.datetime.now().time())
-		logging.warn(errorOutput)
-		with open(keyErrorsFile, "a") as errorFile:
-			errorFile.write(str(errorOutput) + "\n")
-		time.sleep(2)
+		logging.warn("No JSON Response" + str(response.headers))
+		time.sleep(1)
 		return False
-		
+
 	return response.json()
-	
-def writeMasheryError(operation, apikey, reason):
-	errorOutput = {}
-	errorOutput['message'] = reason
-	errorOutput['oldapikey'] = oldApiKey.rstrip()
-	errorOutput["time"] = str(datetime.datetime.now().time())
-	errorOutput['operation'] = operation
-	logging.warn(errorOutput)
-	with open(keyErrorsFile, "a") as errorFile:
-		errorFile.write(str(errorOutput) + "\n")
-	return data
 
 if __name__ == "__main__":
 
-	if args.delete:
+	if args.users:
 		# if delete argument is passed, just remove that username and exit
-		data = deleteMember(args.delete)
-		print(data)
-		result = json.loads(callAPI(data).decode("utf-8"))
-		pprint.pprint(result)
+		for m in args.users:
+			data = deleteMember(m)
 	else:
 
 	# 	list existing members and ask to delete them
 		pageNum = 0
 		while True: 
-			pageNum = pageNum + 1
-			data = getList("members", pageNum)
-			listing = json.loads(callAPI(data).decode("utf-8"))
-			if listing['result']['items'] == []:
-				break
-			members = (listing['result']['items'])
-			for m in members:
-				print(m['display_name'])
-				print(m)
-				deleteme = input('should I remove %s (%s : %s) from %i? ' % (m['display_name'],m['username'],m['email'], areaID))
-				if deleteme == 'y':
-					print("I would be deleting %s" % m['display_name'])
-					data = deleteMember(m['username'])
-					result = json.loads(callAPI(data).decode("utf-8"))
-					pprint.pprint(result)
-
+			pageNum = pageNum + 1			
+			listing = getList("members", pageNum)
+			if(listing):
+				for m in listing:
+					deleteme = raw_input('remove %s (%s : %s) from %i? (y/n/q) ' % (m['display_name'],m['username'],m['email'], areaID))
+					if deleteme == 'y':
+						print("Deleting %s" % m['display_name'])
+						data = deleteMember(m['username'])
+					if deleteme == 'q':
+						exit()
+			else:
+				exit()

@@ -1,0 +1,11 @@
+{
+    "username": {
+    "username": "username",
+    "password": "<password>",
+    "apikey": "<mashery API Key>",
+    "secret": "<Mashery API secret>"
+  }
+}
+
+
+
